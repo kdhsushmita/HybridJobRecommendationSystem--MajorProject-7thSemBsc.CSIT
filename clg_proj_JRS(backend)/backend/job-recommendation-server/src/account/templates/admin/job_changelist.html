@@ -1,0 +1,157 @@
+{% extends "admin/base_site.html" %} {% load static %} {% block content %}
+<div
+  class="chart-container"
+  style="position: relative; height: 40vh; width: 80vw"
+>
+  <canvas id="jobChart" style="height: 100%; width: 100%"></canvas>
+</div>
+
+<div
+  class="chart-container"
+  style="position: relative; height: 40vh; width: 80vw"
+>
+  <canvas id="interactionChart" style="height: 100%; width: 100%"></canvas>
+</div>
+
+<div class="filter-section">
+  <div class="filter-controls">
+    <label for="filterBySelect">Filter By:</label>
+    <select id="filterBySelect" class="filter-select">
+      <option value="job_type">Job Type</option>
+      <option value="industry">Industry</option>
+      <option value="category">Category</option>
+    </select>
+    <button id="updateChart" class="update-button">Update Chart Data</button>
+  </div>
+</div>
+{% endblock %} {% block extrajs %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+  $(document).ready(function () {
+    renderCharts();
+
+    function renderCharts() {
+      renderChart("jobChart", "{% url 'job_summary' %}", "Job");
+      renderChart(
+        "interactionChart",
+        "{% url 'interaction_summary' %}",
+        "Interaction by Day"
+      );
+    }
+
+    function renderChart(chartId, url, labelPrefix) {
+      var filterBy = $("#filterBySelect").val();
+
+      $.ajax({
+        url: url + "?filter-by=" + filterBy,
+        dataType: "json",
+        success: function (data) {
+          var labels = Object.keys(data);
+          var chartData = Object.values(data);
+
+          var ctx = document.getElementById(chartId).getContext("2d");
+          window[chartId] = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: labelPrefix + " Summary by " + filterBy,
+                  data: chartData,
+                  backgroundColor: [
+                    "rgba(255, 99, 132, 0.2)",
+                    "rgba(54, 162, 235, 0.2)",
+                    "rgba(255, 206, 86, 0.2)",
+                    "rgba(75, 192, 192, 0.2)",
+                    "rgba(153, 102, 255, 0.2)",
+                    "rgba(255, 159, 64, 0.2)",
+                  ],
+                  borderColor: [
+                    "rgba(255, 99, 132, 1)",
+                    "rgba(54, 162, 235, 1)",
+                    "rgba(255, 206, 86, 1)",
+                    "rgba(75, 192, 192, 1)",
+                    "rgba(153, 102, 255, 1)",
+                    "rgba(255, 159, 64, 1)",
+                  ],
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              maintainAspectRatio: false,
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        },
+      });
+    }
+
+    function destroyCharts() {
+      if (window.jobChart) {
+        jobChart.destroy();
+      }
+      if (window.interactionChart) {
+        interactionChart.destroy();
+      }
+    }
+
+    $("#updateChart").click(function () {
+      destroyCharts();
+      renderCharts();
+    });
+
+    // $("#filterBySelect").change(function () {
+    //   destroyCharts();
+    //   renderCharts();
+    // });
+  });
+</script>
+
+<style>
+  /* Custom styles for the filter section */
+  .filter-section {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .filter-controls {
+    display: flex;
+    align-items: center;
+  }
+
+  .filter-select {
+    padding: 5px;
+    font-size: 16px;
+    border-radius: 4px;
+    margin-right: 10px;
+  }
+
+  .update-button {
+    padding: 8px 16px;
+    font-size: 16px;
+    border: 2px solid #007bff;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+  }
+
+  .update-button:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+  }
+
+  .chart-container {
+    margin-bottom: 20px;
+  }
+</style>
+{% endblock %}
